@@ -13,7 +13,7 @@ This project implements each stage by hand — chunking, embedding, retrieval �
 
 The final step is a manual paste into Claude rather than an API call — kept manual to keep every pipeline stage inspectable.
 
-For everyday PDF Q&A, a tool like Claude Projects already does this faster. This is a learning vehicle that demonstrates the fundamentals, not a daily-driver product.
+For everyday PDF Q&A, a tool like Claude Projects already does this faster. Minimal RAG pipeline built without framework abstractions, making chunking, embedding, retrieval, and grounding behavior directly inspectable.
 
 ## Pipeline
 
