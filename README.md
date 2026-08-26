@@ -3,7 +3,7 @@ RAG pipeline built from scratch to demonstrate retrieval mechanics and hallucina
 
 # PDF RAG — Grounded Question Answering, Built From Scratch
 
-Ask a question about a PDF and get an answer grounded in that document's actual content, with no hallucination.
+Ask a question about a PDF and get an answer grounded in the document’s retrieved content, with explicit refusal behavior when the answer is not supported by the source.
 
 Built without a RAG framework — no LangChain, no LlamaIndex. Each stage (chunking, embedding, cosine similarity retrieval, prompt assembly) is implemented by hand, so the retrieval mechanics are visible rather than hidden behind a library.
 
