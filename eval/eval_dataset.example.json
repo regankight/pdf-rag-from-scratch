@@ -1,6 +1,6 @@
 {
   "corpus": {
-    "pdf_filename": "your_file.pdf",
+    "pdf_filename": "data/benchmark.pdf",
     "max_chunk_size": 500,
     "overlap": 100,
     "embedding_model": "all-MiniLM-L6-v2"

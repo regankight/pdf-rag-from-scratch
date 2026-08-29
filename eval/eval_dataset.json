@@ -1,0 +1,95 @@
+{
+  "corpus": {
+    "pdf_filename": "data/benchmark.pdf",
+    "max_chunk_size": 500,
+    "overlap": 100,
+    "embedding_model": "all-MiniLM-L6-v2"
+  },
+  "test_cases": [
+    {
+      "question": "How does supervised learning use labeled data?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0004"]
+    },
+    {
+      "question": "What does regression predict instead of a category?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0006"]
+    },
+    {
+      "question": "What is the difference between supervised and unsupervised learning?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0004", "chunk_0007"]
+    },
+    {
+      "question": "What are some practical uses of clustering?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0008"]
+    },
+    {
+      "question": "Why can simple centroid-based clustering struggle with real-world cluster shapes?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0010"]
+    },
+    {
+      "question": "Which algorithms are mentioned for dimensionality reduction?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0012"]
+    },
+    {
+      "question": "How can reinforcement learning train a self-driving car using simulation and rewards?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0015", "chunk_0016"]
+    },
+    {
+      "question": "How do genetic algorithms evolve better solutions over generations?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0017"]
+    },
+    {
+      "question": "How does stacking combine several machine-learning models?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0019"]
+    },
+    {
+      "question": "How is Random Forest related to bagging?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0020"]
+    },
+    {
+      "question": "What is a neuron in a neural network?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0022"]
+    },
+    {
+      "question": "How are neurons arranged into layers and how does data move through a neural network?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0023"]
+    },
+    {
+      "question": "How does transformer self-attention calculate query, key, and value relationships?",
+      "answerable": false,
+      "expected_chunk_ids": []
+    },
+    {
+      "question": "How does retrieval-augmented generation use a vector database to ground an LLM response?",
+      "answerable": false,
+      "expected_chunk_ids": []
+    },
+    {
+      "question": "How does HNSW perform approximate nearest-neighbor vector search?",
+      "answerable": false,
+      "expected_chunk_ids": []
+    },
+    {
+      "question": "How does reinforcement learning from human feedback train a language model?",
+      "answerable": false,
+      "expected_chunk_ids": []
+    },
+    {
+      "question": "Where did the French Revolution take place?",
+      "answerable": false,
+      "expected_chunk_ids": []
+    }
+  ]
+}

@@ -27,7 +27,7 @@ were written against, `eval_dataset.json` records that config up front:
 ```json
 {
   "corpus": {
-    "pdf_filename": "your_file.pdf",
+    "pdf_filename": "data/benchmark.pdf",
     "max_chunk_size": 500,
     "overlap": 100,
     "embedding_model": "all-MiniLM-L6-v2"
@@ -45,7 +45,7 @@ expected_chunk_ids are probably stale, go regenerate them."
 
 ## Setup
 
-1. Make sure `pdf_filename` in [../rag_project.py](../rag_project.py) points at your PDF.
+1. Place your PDF at `data/benchmark.pdf` (the canonical path already set as `pdf_filename` in [../rag_project.py](../rag_project.py)).
 2. `python eval/list_chunks.py` — prints every chunk with its `chunk_id` and a preview.
 3. `cp eval/eval_dataset.example.json eval/eval_dataset.json`
 4. Update the `corpus` block to match your actual `pdf_filename`, chunking config, and embedding model.

@@ -52,7 +52,7 @@ The two hand-checked examples above don't scale, so [eval/](eval/) adds a small 
 ## How to run it
 
 1. Install dependencies: `pip install -r requirements.txt`
-2. Place your PDF in the project folder and set `pdf_filename` to its name
+2. Place your PDF at `data/benchmark.pdf` (or update `pdf_filename` in `rag_project.py` to point elsewhere)
 3. Run Cell 3 to extract and chunk the text
 4. Run Cell 4 to embed the chunks (downloads a small local model, ~90MB, first run only)
 5. Edit the `question` variable in Cell 5, then run it to retrieve the top matching chunks

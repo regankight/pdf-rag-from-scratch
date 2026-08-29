@@ -3,8 +3,8 @@
 # ============================================================
 
 # CELL 2 — set your PDF filename
-# Place your PDF in the same folder as this script, then update the line below
-pdf_filename = "your_file.pdf"  # <-- change this to your actual PDF filename
+# Canonical path for the evaluation corpus — place your PDF here.
+pdf_filename = "data/benchmark.pdf"
 
 # CELL 3 — extract & chunk text
 from pypdf import PdfReader
