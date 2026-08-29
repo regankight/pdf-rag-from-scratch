@@ -1,0 +1,25 @@
+{
+  "corpus": {
+    "pdf_filename": "your_file.pdf",
+    "max_chunk_size": 500,
+    "overlap": 100,
+    "embedding_model": "all-MiniLM-L6-v2"
+  },
+  "test_cases": [
+    {
+      "question": "What is DBSCAN used for?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0012"]
+    },
+    {
+      "question": "How does the document define overfitting?",
+      "answerable": true,
+      "expected_chunk_ids": ["chunk_0004", "chunk_0005"]
+    },
+    {
+      "question": "Where was the French Revolution?",
+      "answerable": false,
+      "expected_chunk_ids": []
+    }
+  ]
+}

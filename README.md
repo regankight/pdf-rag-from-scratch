@@ -45,6 +45,10 @@ Result: the model declined to answer rather than fabricating a response from unr
 
 Retrieval always returns some result even when nothing relevant exists, so both the similarity scores and the prompt's refusal instruction needed to be checked directly rather than assumed.
 
+### Systematic retrieval evaluation
+
+The two hand-checked examples above don't scale, so [eval/](eval/) adds a small harness that runs a set of test questions (answerable + deliberately out-of-domain) through the same, unmodified retriever and reports Recall@1/3/5, per-question ranks, and raw similarity-score distributions for both groups — see [eval/README.md](eval/README.md) for setup.
+
 ## How to run it
 
 1. Install dependencies: `pip install -r requirements.txt`
