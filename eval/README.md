@@ -13,11 +13,16 @@ A chunk's ID is a readable string like `chunk_0000`, `chunk_0001`, ...,
 derived from its position in the list `load_chunks()` returns (see
 `format_chunk_id` in [../rag_project.py](../rag_project.py)).
 
-These IDs are stable **only** for a fixed (PDF, `max_chunk_size`, `overlap`)
+These IDs are stable **only** for a fixed (PDF, embedding model, `overlap_tokens`)
 combination — not stable across document versions or chunking changes yet.
-If you change the PDF or either parameter, re-run `list_chunks.py` and
-update `eval_dataset.json`, since the old IDs may now point at different
-text. No hashing or versioning is implemented for this first version.
+The content-token budget itself isn't a free parameter: it's derived from
+the embedding model's `max_seq_length` and tokenizer (see
+`compute_max_content_tokens` in [../rag_project.py](../rag_project.py)), so
+changing the embedding model changes chunk boundaries too, even with
+`overlap_tokens` unchanged. If you change the PDF, the embedding model, or
+`overlap_tokens`, re-run `list_chunks.py` and update `eval_dataset.json`,
+since the old IDs may now point at different text. No hashing or
+versioning is implemented for this first version.
 
 ## The `corpus` block
 
@@ -28,20 +33,25 @@ were written against, `eval_dataset.json` records that config up front:
 {
   "corpus": {
     "pdf_filename": "data/benchmark.pdf",
-    "max_chunk_size": 500,
-    "overlap": 100,
+    "max_content_tokens": 254,
+    "overlap_tokens": 50,
     "embedding_model": "all-MiniLM-L6-v2"
   },
   "test_cases": [ ... ]
 }
 ```
 
-`run_eval.py` prints this block before running, and compares it against the
-config actually active in `rag_project.py` (`pdf_filename`,
-`DEFAULT_MAX_CHUNK_SIZE`, `DEFAULT_OVERLAP`, `EMBEDDING_MODEL_NAME`). A
-mismatch prints a warning but doesn't stop the run — this is a simple
-sanity check, not a versioning system, so treat a warning as "the
-expected_chunk_ids are probably stale, go regenerate them."
+`max_content_tokens` is recorded rather than assumed, since it's derived
+from whichever embedding model built the corpus (see `compute_max_content_tokens`
+in [../rag_project.py](../rag_project.py)) — it isn't a constant you set directly.
+
+`run_eval.py` builds the index (which loads the embedding model), prints
+this block, and compares it against the config actually active
+(`pdf_filename`, the active model's derived `max_content_tokens`,
+`DEFAULT_OVERLAP_TOKENS`, `EMBEDDING_MODEL_NAME`). A mismatch prints a
+warning but doesn't stop the run — this is a simple sanity check, not a
+versioning system, so treat a warning as "the expected_chunk_ids are
+probably stale, go regenerate them."
 
 ## Setup
 

@@ -38,8 +38,8 @@ from rag_project import (
     pdf_filename,
     build_index,
     retrieve_top_chunks,
-    DEFAULT_MAX_CHUNK_SIZE,
-    DEFAULT_OVERLAP,
+    compute_max_content_tokens,
+    DEFAULT_OVERLAP_TOKENS,
     EMBEDDING_MODEL_NAME,
 )
 
@@ -63,14 +63,18 @@ def load_eval_dataset(path):
     return dataset["corpus"], dataset["test_cases"]
 
 
-def check_corpus_config(recorded_corpus):
+def check_corpus_config(recorded_corpus, model):
     """The expected_chunk_ids in the dataset are only meaningful for the
-    exact (PDF, max_chunk_size, overlap, embedding model) it was built
-    against — warn (don't block) if the active config has drifted."""
+    exact (PDF, max_content_tokens, overlap_tokens, embedding model) it was
+    built against — warn (don't block) if the active config has drifted.
+
+    max_content_tokens is derived from the embedding model (see
+    compute_max_content_tokens), so the model must already be loaded —
+    that's why this now runs after build_index() instead of before it."""
     active_corpus = {
         "pdf_filename": pdf_filename,
-        "max_chunk_size": DEFAULT_MAX_CHUNK_SIZE,
-        "overlap": DEFAULT_OVERLAP,
+        "max_content_tokens": compute_max_content_tokens(model),
+        "overlap_tokens": DEFAULT_OVERLAP_TOKENS,
         "embedding_model": EMBEDDING_MODEL_NAME,
     }
 
@@ -219,10 +223,10 @@ def summarize(records):
 if __name__ == "__main__":
     recorded_corpus, eval_cases = load_eval_dataset(EVAL_DATASET_PATH)
     print(f"Loaded {len(eval_cases)} evaluation questions from {EVAL_DATASET_PATH}")
-    check_corpus_config(recorded_corpus)
 
     chunks, chunk_embeddings, model = build_index(pdf_filename)
     print(f"Indexed {len(chunks)} chunks from '{pdf_filename}'")
+    check_corpus_config(recorded_corpus, model)
 
     records = [evaluate_case(case, chunks, chunk_embeddings, model) for case in eval_cases]
 
