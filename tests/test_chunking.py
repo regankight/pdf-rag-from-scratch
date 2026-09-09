@@ -21,6 +21,7 @@ from rag_project import (
     compute_max_content_tokens,
     validate_chunk_fits,
     EMBEDDING_MODEL_NAME,
+    _split_oversized_paragraph,  # private, but see the test that uses it below
 )
 
 
@@ -148,3 +149,101 @@ def test_validate_chunk_fits_raises_on_oversized_chunk(model):
 def test_validate_chunk_fits_accepts_a_normal_chunk(model):
     fine = "A short chunk that comfortably fits the model."
     validate_chunk_fits(fine, model)  # should not raise
+
+
+def test_validate_chunk_fits_measures_untruncated_length(model):
+    """The guard must measure the chunk's real, untruncated token count -
+    not an already-truncated tensor, which is always <= max_seq_length by
+    construction and could never catch anything. Confirms the two lengths
+    genuinely differ for an oversized chunk, and that the guard still
+    catches it (i.e. it's using the untruncated one)."""
+    oversized = make_paragraph(model.max_seq_length * 4)
+    untruncated_length = len(model.tokenizer.encode(oversized, add_special_tokens=True))
+    truncated_tensor_length = model.tokenize([oversized])["input_ids"].shape[1]
+
+    assert untruncated_length > model.max_seq_length
+    assert truncated_tensor_length == model.max_seq_length
+    with pytest.raises(ValueError):
+        validate_chunk_fits(oversized, model)
+
+
+# --- g. oversized-paragraph splits land on word boundaries, not mid-word
+
+def _stress_paragraph(word_count):
+    """Words with attached digits (e.g. "item47"), which the BERT
+    WordPiece tokenizer splits into several sub-word tokens — unlike the
+    single-token dictionary words in make_paragraph. This is the exact
+    shape of text that exposed the original bug: a raw token-index cut
+    can land inside one of these multi-token words."""
+    return " ".join(f"item{i}" for i in range(word_count))
+
+
+def test_oversized_paragraph_splits_only_on_word_boundaries(model, max_content_tokens):
+    para = _stress_paragraph(max_content_tokens * 3)
+    chunks = chunk_text(para, model.tokenizer, max_content_tokens, overlap_tokens=15)
+
+    assert len(chunks) > 1
+    cursor = 0
+    for chunk in chunks:
+        idx = para.index(chunk, cursor)
+        end = idx + len(chunk)
+        assert idx == 0 or para[idx - 1].isspace(), f"chunk starts mid-word: {chunk[:30]!r}"
+        assert end == len(para) or para[end].isspace(), f"chunk ends mid-word: {chunk[-30:]!r}"
+        assert token_count(chunk, model) <= max_content_tokens
+        cursor = idx
+
+
+# --- h. a single oversized "word" still respects the hard token limit --
+#
+# Real text can't actually trigger this with all-MiniLM-L6-v2: its
+# WordPiece tokenizer caps any single word at 100 characters before
+# collapsing to one [UNK] token (verified — see _split_oversized_paragraph's
+# docstring), which never reaches a 254-token budget. So this exercises
+# _split_oversized_paragraph directly with hand-built offsets simulating a
+# tokenizer that doesn't cap word length that way — the fallback this
+# function documents exists for exactly that portability case.
+
+def test_split_oversized_paragraph_falls_back_safely_for_a_single_giant_word():
+    budget = 10
+    overlap = 2
+    para = "0123456789abcdefghijklmnopqrst"  # 30 distinct chars, one "word"
+    offsets = [(i, i + 1) for i in range(30)]  # simulate 30 single-char tokens
+
+    chunks = _split_oversized_paragraph(para, offsets, budget, overlap_tokens=overlap)
+
+    # This is the bug this test caught: consuming only the *first*
+    # budget-sized window and stopping (because there's only one "word")
+    # silently dropped the rest of an oversized word beyond one budget's
+    # worth. Confirm the full word is actually covered, in order, with
+    # the requested overlap between consecutive windows — not just that
+    # some chunks came back.
+    assert chunks == ["0123456789", "89abcdefgh", "ghijklmnop", "opqrst"]
+    for chunk in chunks:
+        assert 0 < len(chunk) <= budget  # 1 char == 1 token in this synthetic mapping
+    for a, b in zip(chunks, chunks[1:]):
+        assert a[-overlap:] == b[:overlap]
+
+
+# --- i. overlap and forward progress stay deterministic -----------------
+
+def test_zero_overlap_chunks_are_contiguous_with_no_gap_or_overlap(model, max_content_tokens):
+    # Uses _stress_paragraph (unique words: "item0", "item1", ...) rather
+    # than make_paragraph's small cycling word pool — a cycling pool makes
+    # the text periodic, which can make para.index() land on a coincidental
+    # earlier repeat of the same window instead of the true occurrence.
+    para = _stress_paragraph(max_content_tokens * 3)
+    chunks = chunk_text(para, model.tokenizer, max_content_tokens, overlap_tokens=0)
+
+    assert len(chunks) > 1
+    cursor = 0
+    prev_end = None
+    for chunk in chunks:
+        idx = para.index(chunk, cursor)
+        end = idx + len(chunk)
+        if prev_end is not None:
+            # Exactly the one space between words, and nothing more -
+            # confirms no overlap and no skipped/dropped text either,
+            # i.e. deterministic forward progress with zero overlap.
+            assert para[prev_end:idx] == " "
+        prev_end = end
+        cursor = idx
