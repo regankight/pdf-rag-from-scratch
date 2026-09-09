@@ -1,8 +1,8 @@
 {
   "corpus": {
     "pdf_filename": "data/benchmark.pdf",
-    "max_chunk_size": 500,
-    "overlap": 100,
+    "max_content_tokens": 254,
+    "overlap_tokens": 50,
     "embedding_model": "all-MiniLM-L6-v2"
   },
   "test_cases": [
@@ -19,52 +19,52 @@
     {
       "question": "What is the difference between supervised and unsupervised learning?",
       "answerable": true,
-      "expected_chunk_ids": ["chunk_0004", "chunk_0007"]
+      "expected_chunk_ids": ["chunk_0004", "chunk_0008"]
     },
     {
       "question": "What are some practical uses of clustering?",
       "answerable": true,
-      "expected_chunk_ids": ["chunk_0008"]
+      "expected_chunk_ids": ["chunk_0010"]
     },
     {
       "question": "Why can simple centroid-based clustering struggle with real-world cluster shapes?",
       "answerable": true,
-      "expected_chunk_ids": ["chunk_0010"]
+      "expected_chunk_ids": ["chunk_0012"]
     },
     {
       "question": "Which algorithms are mentioned for dimensionality reduction?",
       "answerable": true,
-      "expected_chunk_ids": ["chunk_0012"]
+      "expected_chunk_ids": ["chunk_0015"]
     },
     {
       "question": "How can reinforcement learning train a self-driving car using simulation and rewards?",
       "answerable": true,
-      "expected_chunk_ids": ["chunk_0015", "chunk_0016"]
+      "expected_chunk_ids": ["chunk_0018", "chunk_0020"]
     },
     {
       "question": "How do genetic algorithms evolve better solutions over generations?",
       "answerable": true,
-      "expected_chunk_ids": ["chunk_0017"]
+      "expected_chunk_ids": ["chunk_0022"]
     },
     {
       "question": "How does stacking combine several machine-learning models?",
       "answerable": true,
-      "expected_chunk_ids": ["chunk_0019"]
+      "expected_chunk_ids": ["chunk_0025"]
     },
     {
       "question": "How is Random Forest related to bagging?",
       "answerable": true,
-      "expected_chunk_ids": ["chunk_0020"]
+      "expected_chunk_ids": ["chunk_0027"]
     },
     {
       "question": "What is a neuron in a neural network?",
       "answerable": true,
-      "expected_chunk_ids": ["chunk_0022"]
+      "expected_chunk_ids": ["chunk_0029"]
     },
     {
       "question": "How are neurons arranged into layers and how does data move through a neural network?",
       "answerable": true,
-      "expected_chunk_ids": ["chunk_0023"]
+      "expected_chunk_ids": ["chunk_0030"]
     },
     {
       "question": "How does transformer self-attention calculate query, key, and value relationships?",

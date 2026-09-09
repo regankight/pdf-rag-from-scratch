@@ -1,3 +1,4 @@
 pypdf
 sentence-transformers
 numpy
+pytest  # for running tests/
