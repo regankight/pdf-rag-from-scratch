@@ -260,6 +260,24 @@ def retrieve_top_chunks(question, chunks, chunk_embeddings, model, top_n=5):
     ranked = sorted(enumerate(zip(chunks, scores)), key=lambda x: x[1][1], reverse=True)
     return [(format_chunk_id(idx), chunk, score) for idx, (chunk, score) in ranked[:top_n]]
 
+# CELL 6 — assemble a grounded prompt from retrieved chunks
+def assemble_grounded_prompt(question, top_matches):
+    """Builds the "answer only from this context" prompt from a
+    retrieve_top_chunks() result. Pulled out as its own function so the
+    FastAPI /chat endpoint (app/rag.py) can reuse the exact same prompt
+    the script below prints — not a second, hand-copied version of it."""
+    context = "\n\n---\n\n".join([chunk for chunk_id, chunk, score in top_matches])
+
+    return f"""Using only the context below, answer the question.
+If the answer isn't in the context, say so.
+
+CONTEXT:
+{context}
+
+QUESTION:
+{question}
+"""
+
 if __name__ == "__main__":
     chunks, chunk_embeddings, model = build_index(pdf_filename)
     print(f"Total chunks: {len(chunks)}")
@@ -275,18 +293,5 @@ if __name__ == "__main__":
         print(f"\n--- Match {i+1} (chunk_id: {chunk_id}, score: {score:.3f}) ---")
         print(chunk[:300])
 
-    # CELL 6 — assemble prompt to paste into claude.ai
-    context = "\n\n---\n\n".join([chunk for chunk_id, chunk, score in top_matches])
-
-    prompt = f"""Using only the context below, answer the question.
-If the answer isn't in the context, say so.
-
-CONTEXT:
-{context}
-
-QUESTION:
-{question}
-"""
-
-    print(prompt)
+    print(assemble_grounded_prompt(question, top_matches))
     # Copy the printed output above and paste into claude.ai chat

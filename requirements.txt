@@ -2,3 +2,6 @@ pypdf
 sentence-transformers
 numpy
 pytest  # for running tests/
+fastapi
+uvicorn  # ASGI server that actually runs the FastAPI app
+ollama  # local, free LLM calls for /chat — talks to the Ollama daemon on localhost
