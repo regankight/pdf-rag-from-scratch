@@ -26,14 +26,17 @@ Grounded prompt assembly
 ↓
 Answer generation
 ```
-The final answer step is intentionally manual: the assembled prompt can be pasted into an LLM such as Claude.
-The retrieval system itself requires no API key.
+Running `rag_project.py` directly stops at prompt assembly: the assembled prompt is printed for manual use, e.g. pasted into an LLM such as Claude.
+The [API](#serving-the-pipeline-as-an-api) described below automates that last step instead, using a local model via Ollama.
+The retrieval system itself requires no API key — and neither does the generation step, for the same reason (see [Local generation](#local-generation-ollama)).
 ## Tech stack
 - Python
 - pypdf
 - sentence-transformers
 - all-MiniLM-L6-v2
 - NumPy
+- FastAPI + Uvicorn (serving)
+- Ollama + Llama 3.2 (local generation)
 ## Chunking
 Chunk size is measured in **tokens, not words**. `all-MiniLM-L6-v2` has a hard `max_seq_length` of 256 tokens, and word count is a poor proxy for token count — a word-piece tokenizer routinely produces 1.3-2x as many tokens as words, especially for punctuation-heavy or technical text. Chunking by a word limit let chunks reach the embedding model oversized, where `sentence-transformers` truncates silently (no exception, only a low-level log line) rather than failing loudly.
 The chunk-content token budget is **derived from the active embedding model at runtime**, not hardcoded: `model.max_seq_length` minus however many special tokens (`[CLS]`/`[SEP]`) its tokenizer adds automatically (`compute_max_content_tokens` in [rag_project.py](rag_project.py)). For `all-MiniLM-L6-v2` that's `256 - 2 = 254` content tokens, with a 50-token overlap between windows of an oversized paragraph.
@@ -129,6 +132,10 @@ pdf-rag-from-scratch/
 ├── requirements.txt
 ├── README.md
 ├── LICENSE
+├── app/                        # FastAPI service — see Serving the pipeline as an API
+│   ├── main.py                 # routes + startup lifecycle
+│   ├── rag.py                  # retrieval -> prompt -> local-LLM generation adapter
+│   └── schemas.py              # request/response models
 ├── data/
 │   └── benchmark.pdf          # local benchmark corpus; ignored by Git
 ├── eval/
@@ -170,6 +177,38 @@ Run:
 python eval/run_eval.py
 ```
 The evaluation script compares the active corpus and retrieval configuration against the configuration recorded in the evaluation dataset. If they differ, it prints a warning and continues rather than blocking the run — evaluation still executes, but the mismatch means expected_chunk_ids may no longer be reliable.
+## Serving the pipeline as an API
+A FastAPI service in [app/](app/) wraps the same retrieval pipeline behind two HTTP endpoints. The index (embedding model + embedded chunks) is built once, at server startup, not per request — see `lifespan` in [app/main.py](app/main.py).
+### Running the server
+Requires [Ollama](https://ollama.com) installed and running locally, with a model pulled:
+```bash
+ollama pull llama3.2
+```
+Then, from the project root:
+```bash
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+Interactive API docs (Swagger UI, auto-generated from the schemas in [app/schemas.py](app/schemas.py)) are then available at `http://127.0.0.1:8000/docs`.
+### `POST /search`
+Retrieval only — wraps `retrieve_top_chunks()` directly, no generation involved. Returns the matched chunks and their cosine-similarity scores:
+```bash
+curl -X POST http://127.0.0.1:8000/search \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What caused the first AI winter?", "top_n": 3}'
+```
+```json
+{"results": [{"chunk_id": "chunk_0033", "text": "...", "score": 0.3506}, ...]}
+```
+### `POST /chat`
+Retrieves chunks, assembles the same grounded prompt `rag_project.py` builds (`assemble_grounded_prompt`), and streams the answer back from a local model as it's generated — the response body arrives incrementally, not as one blocked-on-completion JSON payload. `curl -N` disables curl's own buffering so the streaming is visible client-side too:
+```bash
+curl -N -X POST http://127.0.0.1:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What caused the first AI winter?", "top_n": 3}'
+```
+The grounding behavior carries over from retrieval: a question the corpus doesn't support gets a refusal, not a hallucinated answer. Asking `/chat` "Where was the french revolution" (unrelated to this ML-focused corpus) is correctly answered with a refusal rather than an invented one — the same grounded-prompt contract as the manual pasted-into-Claude workflow, just automated.
+Streaming was verified, not just assumed: for a representative question, curl's own `time_starttransfer` (0.002s) was two orders of magnitude below `time_total` (1.06s), and a per-chunk timestamp trace showed each word arriving roughly 20-30ms after the last — consistent with Ollama's real token-generation pace, not a fast response that merely looks incremental.
 ## Design choices
 ### No RAG framework
 LangChain and LlamaIndex are intentionally omitted so the retrieval mechanics remain visible.
@@ -178,6 +217,11 @@ The benchmark corpus is small enough that a linear cosine-similarity scan is sim
 A vector database would solve a scaling problem this project does not have.
 ### Local embeddings
 `all-MiniLM-L6-v2` runs locally through sentence-transformers.
+### Local generation (Ollama)
+`/chat` generates through a local Llama 3.2 via Ollama rather than a paid hosted API, for the same reason retrieval uses no API key: no cost, no external network call, nothing to configure beyond pulling a model. The tradeoff is answer quality below what a frontier hosted model would give — acceptable here because the point of this project is retrieval mechanics and serving architecture, not generation quality.
+The generation call is isolated to a single function, `stream_answer()` in [app/rag.py](app/rag.py) — `app/main.py` only knows it gets a string of text back, not that Ollama is involved. Swapping in a hosted API instead is a change to that one function, not to the routing or schema layers.
+### No auth, rate limiting, or persistence
+Out of scope by design, not by oversight: this is a single-user local service demonstrating a serving pattern, not a multi-tenant deployment. Adding them would solve problems this project doesn't have.
 ### Fixed benchmark corpus
 The evaluation dataset is tied to a specific PDF, chunking configuration, and embedding model so repeated retrieval changes can be compared against the same ground truth.
 ## What this project demonstrates
@@ -191,6 +235,9 @@ The evaluation dataset is tied to a specific PDF, chunking configuration, and em
 - retrieval failure diagnosis
 - measured experimentation
 - rejecting a proposed change when evaluation showed a regression
+- serving a RAG pipeline behind a REST API (FastAPI)
+- streaming an LLM response over HTTP, verified rather than assumed
+- separating retrieval, generation, and HTTP routing into independently swappable modules
 ## Scope
 This is a deliberately small retrieval system designed for inspectability and evaluation.
 It is not presented as a production-scale RAG platform or a comprehensive retrieval benchmark.
