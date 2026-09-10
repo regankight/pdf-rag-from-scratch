@@ -29,6 +29,5 @@ class ChatRequest(BaseModel):
     question: str
     top_n: int = Field(default=5, ge=1, le=20)
 
-
-class ChatResponse(BaseModel):
-    answer: str
+# No ChatResponse — /chat's body is a raw streamed text response, not a
+# single JSON object, so there's nothing here for a schema to describe.

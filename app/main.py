@@ -1,19 +1,21 @@
 # ============================================================
-# FastAPI service — step 2: /search.
+# FastAPI service.
 #
-# Adds the retrieval endpoint by calling straight into rag_project.py —
-# no retrieval logic is duplicated here. The one new piece of machinery
-# is `lifespan`: building the index (loading the embedding model +
-# embedding every chunk) is expensive, so it must run once at server
+# /search wraps retrieve_top_chunks() from rag_project.py directly — no
+# retrieval logic is duplicated here. /chat streams its answer back from
+# a local Ollama model via app/rag.py. The one piece of machinery shared
+# by both is `lifespan`: building the index (loading the embedding model
+# + embedding every chunk) is expensive, so it must run once at server
 # startup, not on every request.
 # ============================================================
 
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 
-from app.rag import generate_answer
-from app.schemas import ChatRequest, ChatResponse, SearchRequest, SearchResponse, SearchResult
+from app.rag import stream_answer
+from app.schemas import ChatRequest, SearchRequest, SearchResponse, SearchResult
 from rag_project import build_index, pdf_filename, retrieve_top_chunks
 
 
@@ -59,16 +61,20 @@ def search(request: SearchRequest):
     )
 
 
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/chat")
 def chat(request: ChatRequest):
-    # Non-streaming for now — this step just proves retrieval + a local
-    # Ollama call work end to end. Streaming the answer back token by
-    # token is the next step, on top of this once it's confirmed correct.
-    answer = generate_answer(
-        request.question,
-        app.state.chunks,
-        app.state.chunk_embeddings,
-        app.state.model,
-        top_n=request.top_n,
+    # StreamingResponse takes any async iterable of chunks and sends each
+    # one to the client as soon as it's produced, instead of waiting for
+    # stream_answer() to finish and returning it all at once. No
+    # response_model here — the body is a raw text stream, not a single
+    # JSON object matching a schema.
+    return StreamingResponse(
+        stream_answer(
+            request.question,
+            app.state.chunks,
+            app.state.chunk_embeddings,
+            app.state.model,
+            top_n=request.top_n,
+        ),
+        media_type="text/plain",
     )
-    return ChatResponse(answer=answer)
