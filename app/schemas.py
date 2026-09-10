@@ -23,3 +23,12 @@ class SearchResult(BaseModel):
 
 class SearchResponse(BaseModel):
     results: list[SearchResult]
+
+
+class ChatRequest(BaseModel):
+    question: str
+    top_n: int = Field(default=5, ge=1, le=20)
+
+
+class ChatResponse(BaseModel):
+    answer: str
