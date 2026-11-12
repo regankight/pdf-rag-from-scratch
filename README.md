@@ -173,11 +173,24 @@ To inspect the chunk IDs used by the evaluation dataset (each shown with its tok
 ```bash
 python eval/list_chunks.py
 ```
-## Running the tests
-```bash
-pytest tests/
-```
-Covers the tokenizer-aware chunker: paragraphs that fit are kept whole, oversized paragraphs are split into overlapping token-bounded windows, no generated chunk ever exceeds the embedding model's real limit, and the pre-embedding guard rejects one that would.
+
+## How I test
+
+**The risk:** a RAG system that silently loses part of a document gives confident answers from incomplete evidence, and nothing in the logs says so. That's what these tests guard against, because it happened here: 34% of chunks were losing text before embedding, with no error raised.
+
+**What the 11 tests prove:**
+- no chunk can go over the embedding model's real limit, so no document text is silently dropped
+- an oversized chunk stops the pipeline with an error instead of being quietly cut off
+- long paragraphs split on word boundaries, with overlap and no gaps, so nothing falls between chunks
+
+**Why the real tokenizer, not a fake:** a fake would pass while the real system still truncated. The tests load the actual `all-MiniLM-L6-v2` tokenizer, so they fail exactly when production would.
+
+**Two layers of checking:** unit tests answer "does the code do what it should?" The 17-question [retrieval benchmark](#retrieval-evaluation) answers "does it find the right evidence?" The benchmark is also what caught a "fix" that improved top-5 results while making the top result worse.
+
+**Not covered:** the FastAPI endpoints and the Ollama call. They need a running local model, so they stay out of CI.
+
+**Run:** `pytest tests/`. CI runs them on every push and pull request.
+
 ## Running the retrieval benchmark
 Run:
 ```bash
