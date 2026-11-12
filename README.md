@@ -1,5 +1,7 @@
 # PDF RAG From Scratch
 
+[![tests](https://github.com/regankight/pdf-rag-from-scratch/actions/workflows/tests.yml/badge.svg)](https://github.com/regankight/pdf-rag-from-scratch/actions/workflows/tests.yml)
+
 **A RAG pipeline built from scratch in Python (no LangChain, no vector database), with a benchmark that checks whether the right evidence is actually retrieved.**
 
 - **Result:** found and fixed a silent bug where **34% of chunks were cut off** before embedding, with no error raised. Also rejected a "fix" that looked better at top-5 (0.92 → 1.00) but made the top result worse (0.92 → 0.75).
