@@ -1,8 +1,13 @@
 # PDF RAG From Scratch
-A small, inspectable Retrieval-Augmented Generation pipeline built in Python without LangChain, LlamaIndex, or a vector database.
-The project implements the retrieval path directly:
-**PDF → text extraction → paragraph-aware, tokenizer-aware chunking → embeddings → cosine-similarity retrieval → prompt assembly**
-It also includes a fixed retrieval-evaluation benchmark for measuring whether relevant evidence is actually being retrieved rather than judging results by inspection alone.
+
+**A RAG pipeline built from scratch in Python (no LangChain, no vector database), with a benchmark that checks whether the right evidence is actually retrieved.**
+
+- **Result:** found and fixed a silent bug where **34% of chunks were cut off** before embedding, with no error raised. Also rejected a "fix" that looked better at top-5 (0.92 → 1.00) but made the top result worse (0.92 → 0.75).
+- **Why it matters:** RAG always returns *something*. This project measures whether it's the right thing, and doesn't ship a change just because one number improved.
+- **Stack:** Python · RAG · embeddings (sentence-transformers) · retrieval evaluation (Hit@k, Recall@k) · FastAPI · streaming · Ollama · pytest
+
+**Pipeline:** PDF → text extraction → paragraph-aware, tokenizer-aware chunking → embeddings → cosine-similarity retrieval → prompt assembly
+
 ## Why this project exists
 RAG systems always return a ranked result.
 That does not mean the retrieved result is relevant enough to answer the question.
